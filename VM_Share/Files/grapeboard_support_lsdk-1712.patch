@@ -1,0 +1,321 @@
+diff --git a/configs/build_lsdk.cfg b/configs/build_lsdk.cfg
+index a3cf0ed..671ff60 100644
+--- a/configs/build_lsdk.cfg
++++ b/configs/build_lsdk.cfg
+@@ -7,10 +7,10 @@ GIT_REPOSITORY_URL="https://github.com/qoriq-open-source"
+ lsdk_version=1712
+ 
+ # set default components to be built automatically
+-CONFIG_BUILD_RCW=y
+-CONFIG_BUILD_UBOOT=y
+-CONFIG_BUILD_UEFI=y
+-CONFIG_BUILD_PPA=y
++CONFIG_BUILD_RCW=n
++CONFIG_BUILD_UBOOT=n
++CONFIG_BUILD_UEFI=n
++CONFIG_BUILD_PPA=y
+ CONFIG_BUILD_LINUX=y
+ CONFIG_BUILD_RESTOOL=y
+ CONFIG_BUILD_FLIB=y
+@@ -37,16 +37,18 @@ CONFIG_BUILD_CRCONF=y
+ CONFIG_BUILD_EDGESCALE_EDS=n
+ CONFIG_BUILD_EDS_KUBELET=n
+ CONFIG_BUILD_EDS_PUPPET=n
++CONFIG_BUILD_RTL8723BU=y
+ 
+ # default machines list
+-CONFIG_MACHINE_LS1012ARDB=y
+-CONFIG_MACHINE_LS1012AFRDM=y
+-CONFIG_MACHINE_LS1021ATWR=y
+-CONFIG_MACHINE_LS1043ARDB=y
+-CONFIG_MACHINE_LS1046ARDB=y
+-CONFIG_MACHINE_LS1088ARDB=y
+-CONFIG_MACHINE_LS2088ARDB=y
++CONFIG_MACHINE_LS1012ARDB=n
++CONFIG_MACHINE_LS1012AFRDM=n
++CONFIG_MACHINE_LS1021ATWR=n
++CONFIG_MACHINE_LS1043ARDB=n
++CONFIG_MACHINE_LS1046ARDB=n
++CONFIG_MACHINE_LS1088ARDB=n
++CONFIG_MACHINE_LS2088ARDB=n
+ CONFIG_MACHINE_LA1575ARDB=n
++CONFIG_MACHINE_GRAPEBOARD=y
+ 
+ # default build option
+ BUILD_GUESTRFS=y
+@@ -69,7 +71,7 @@ fbdockerimgversion=16.04
+ 
+ # component repository list
+ firmware_repo_list="u-boot rcw rcw-bin qoriq-uefi-binary qoriq-fm-ucode mc-utils qoriq-mc-binary ppa-generic qoriq-qe-ucode qoriq-firmware-cortina qoriq-engine-pfe-bin"
+-linux_repo_list="linux cryptodev-linux lttng-modules"
++linux_repo_list="linux cryptodev-linux lttng-modules rtl8723bu"
+ apps_repo_list="restool flib fmlib fmc openssl odp ofp dpdk ovs-dpdk gpp-aioptool cst aiopsl ptpd ceetm qbman_userspace eth-config crconf optee_os optee_client optee_test edgescale-eds eds-kubelet eds-puppet"
+ 
+ # default git tree and branch
+@@ -78,8 +80,8 @@ default_linux_tree=linux
+ 
+ # linux config list
+ BUILD_DUAL_KERNEL=y
+-linux_config_list_arm64="defconfig lsdk.config"
+-linux_config_list_arm32v8="multi_v7_defconfig multi_v7_lpae.config multi_v8.config lsdk.config"
++linux_config_list_arm64="defconfig lsdk.config grapeboard_wireless.config"
++linux_config_list_arm32v8="multi_v7_defconfig multi_v7_lpae.config multi_v8.config lsdk.config grapeboard_wireless.config"
+ linux_config_list_arm32v7="multi_v7_defconfig multi_v7_lpae.config lsdk.config"
+ 
+ # uefi machine list
+@@ -107,11 +109,15 @@ qoriq_engine_pfe_bin_url=https://github.com/nxp/qoriq-engine-pfe-bin.git
+ qoriq_engine_pfe_bin_tag=LSDK-17.12
+ 
+ # linux git tree
+-linux_tag=LSDK-17.12-V4.9
++linux_url=http://git.scalys.com/lsdk/linux
++linux_branch=grapeboard-proto
++# url will be changed on final release
+ secondary_linux_tag=LSDK-17.12-V4.4
+ cryptodev_linux_tag=LSDK-17.12
+ lttng_modules_url=git://git.lttng.org/lttng-modules.git
+ lttng_modules_tag=v2.10.2
++rtl8723bu_url=https://github.com/lwfinger/rtl8723bu.git
++rtl8723bu_branch=master
+ 
+ # apps git tree
+ restool_tag=LSDK-17.12
+diff --git a/manifest/grapeboard.manifest b/manifest/grapeboard.manifest
+new file mode 100755
+index 0000000..a5d9bcd
+--- /dev/null
++++ b/manifest/grapeboard.manifest
+@@ -0,0 +1,39 @@
++# [general]
++machine=grapeboard
++
++# [firmware images]
++rcw_qspi=null
++rcw_qspi_sec=null
++uboot_qspiboot=null
++uboot_qspiboot_sec=null
++secureboot_headers_qspi=null
++uefi_norboot=null
++uefi_sdboot=null
++uefi_env=null
++ppa=build/firmware/ppa/soc-ls1012/ppa.itb
++pfe_fw=build/firmware/engine-pfe-bin/ls1012a/u-boot/pfe_fw_sbl.itb
++pfe_kernel=build/firmware/engine-pfe-bin/ls1012a/slow_path/ppfe*.elf
++fman_ucode=null
++qe_firmware=null
++phy_firmware=null
++dpaa2_mc_fw=null
++dpaa2_mc_dpc=null
++dpaa2_mc_dpl=null
++rtl8723bu_fw=build/linux/linux/arm64/lib/firmware/rtl_bt/rtl8723b_fw.bin
++
++# [linux, dtb, rfs]
++kernel_img=build/linux/kernel/arm64/Image
++kernel_uimg=build/linux/kernel/arm64/uImage
++kernel_vmlinux=build/linux/kernel/arm32/vmlinux
++device_tree=build/linux/kernel/arm64/grapeboard.dtb
++ramdiskrfs=build/images/ramdisk_rootfs_arm64.ext4.gz.uboot
++kernelrfs_continuous=yes
++
++# [distro autoboot script]
++uboot_scr=null
++bootscript_dec=null
++
++distroboot=null
++
++# [secure boot scripts in cst]
++qspi_script=scripts/platforms/ls104x_1012_qspi.sh
+diff --git a/packages/apt-packages/additional_packages_list_full_grapeboard b/packages/apt-packages/additional_packages_list_full_grapeboard
+new file mode 100644
+index 0000000..e98cd53
+--- /dev/null
++++ b/packages/apt-packages/additional_packages_list_full_grapeboard
+@@ -0,0 +1,22 @@
++# full additional package list
++
++additional_packages_list="apt git gcc vim ethtool wget ftp make makedev
++ build-essential gdb u-boot-tools device-tree-compiler python python-dev
++ zip libxml2-dev libsensors4-dev libssl-dev libedit-dev liblzma-dev tree
++ binutils-dev autoconf automake dh-autoreconf libnuma-dev libpcap-dev lxc
++ gdb bc qemu-kvm libvirt-bin virt-manager bridge-utils libtool lm-sensors
++ libncurses5-dev bison libelf-dev curl docker.io libcunit1-dev python-pip
++ iperf netperf flex autotools-dev openssh-server openssh-client hugepages
++ tcpdump vlan ifenslave linux-tools-generic blktrace tftp-hpa tftpd-hpa
++ strace debootstrap sysfsutils cpufrequtils iozone3 fio mdadm vsftpd telnet
++ ipsec-tools lmbench sysstat in.telnetd watchdog glibc-locale rdate lxd
++ initramfs-tools libtclap-dev i2c-tools mtd-utils dosfstools lttng-tools
++ net-tools xterm can-utils bluez iw wpasupplicant"
++
++
++# install extrinsic package needed by user but unavailable from official ubuntu
++extrinsic_packages_list=""
++
++
++# setup source packages depended by some custom components.
++source_packages_list="iproute2"
+diff --git a/packages/installer/linux_arm32.its b/packages/installer/linux_arm32.its
+index e85769c..7e88acd 100644
+--- a/packages/installer/linux_arm32.its
++++ b/packages/installer/linux_arm32.its
+@@ -88,6 +88,15 @@
+                         compression = "none";
+                         load = <0x9ffe0000>;
+                 };
++
++                grapeboard-dtb {
++                        description = "Flattened Device Tree blob";
++                        data = /incbin/("../../build/linux/kernel/arm32/grapeboard.dtb");
++                        type = "flat_dt";
++                        arch = "arm";
++                        compression = "none";
++                        load = <0x9ffe0000>;
++                };
+ 	};
+ 
+ 	configurations {
+@@ -125,5 +134,12 @@
+                         fdt = "ls1012afrdm-dtb";
+                         ramdisk = "initrd-installer";
+ 		};
++
++		grapeboard {
++                        description = "Boot Linux kernel";
++                        kernel = "kernel-v8";
++                        fdt = "grapeboard-dtb";
++                        ramdisk = "initrd-installer";
++		};
+ 	};
+ };
+diff --git a/packages/installer/linux_arm64.its b/packages/installer/linux_arm64.its
+index 5b5d507..dc19b1a 100644
+--- a/packages/installer/linux_arm64.its
++++ b/packages/installer/linux_arm64.its
+@@ -129,6 +129,19 @@
+ 				algo = "crc32";
+ 			};
+ 		};
++
++		grapeboard-dtb {
++			description = "grapeboard-dtb";
++			data = /incbin/("../../build/linux/kernel/arm64/grapeboard.dtb");
++			type = "flat_dt";
++			arch = "arm64";
++			os = "linux";
++			compression = "none";
++			load = <0x90000000>;
++			hash@1 {
++				algo = "crc32";
++			};
++		};
+ 	};
+ 
+ 	configurations {
+@@ -181,5 +194,12 @@
+ 			fdt = "ls1012afrdm-dtb";
+ 		};
+ 
++		grapeboard {
++			description = "config for grapeboard";
++			kernel = "kernel";
++			ramdisk = "initrd-installer";
++			fdt = "grapeboard-dtb";
++		};
++
+ 	};
+ };
+diff --git a/packages/linux/Makefile b/packages/linux/Makefile
+index 00067e1..ff65d31 100644
+--- a/packages/linux/Makefile
++++ b/packages/linux/Makefile
+@@ -10,7 +10,9 @@ include $(TOPDIR)/include/repo.mk
+ 
+ LINUX_REPO_LIST = $(KERNEL_TREE) cryptodev-linux
+ 
+-all: setup-repo build-linux
++
++
++all: setup-repo build-linux rtl8723bu
+ 
+ setup-repo:
+ 	@$(call fetch-git-tree,$(KERNEL_TREE))
+@@ -44,11 +46,12 @@ ifeq ($(CONFIG_BUILD_LINUX), y)
+ 	freescale/fsl-ls1046a-rdb-sdk.dtb freescale/fsl-ls1012a-rdb.dtb \
+ 	freescale/fsl-ls1012a-frdm.dtb -C $(KERNEL_PATH) O=$$opdir; fi && \
+ 	if [ $(DESTARCH) = arm64 ]; then cp $$opdir/arch/$$locarch/boot/Image* \
+-	$(TOPDIR)/build/linux/$(KERNEL_TREE)/$(DESTARCH); fi && \
++	$(TOPDIR)/build/linux/$(KERNEL_TREE)/$(DESTARCH) && \
++	mkimage -A $(DESTARCH) -O linux -T kernel -C gzip -a 0x80080000 -e 0x80080000 -n Linux -d $(TOPDIR)/build/linux/$(KERNEL_TREE)/$(DESTARCH)/Image.gz $(TOPDIR)/build/linux/$(KERNEL_TREE)/$(DESTARCH)/uImage; fi && \
+ 	if [ $(DESTARCH) = arm32 ]; then cp $$opdir/arch/$$locarch/boot/uImage \
+ 	$(TOPDIR)/build/linux/$(KERNEL_TREE)/$(DESTARCH)/uImage.$$extname; \
+ 	cp $$opdir/arch/$$locarch/boot/zImage $(TOPDIR)/build/linux/$(KERNEL_TREE)/$(DESTARCH)/zImage.$$extname; fi && \
+-	ls $$opdir/arch/$$locarch/boot/dts/$$dtbstr | grep -E 'rdb|frdm|twr|qds' | xargs -I {} cp {} \
++	ls $$opdir/arch/$$locarch/boot/dts/$$dtbstr | grep -E 'rdb|frdm|twr|qds|grapeboard' | xargs -I {} cp {} \
+ 	$(TOPDIR)/build/linux/$(KERNEL_TREE)/$(DESTARCH) && \
+ 	if [ $(DESTARCH) = arm32 ]; then rm -f $(TOPDIR)/build/linux/$(KERNEL_TREE)/arm32/fsl-ls2*.dtb; fi && \
+ 	cd $(TOPDIR)/build/linux/$(KERNEL_TREE)/$(DESTARCH) && if [ -f fsl-ls1043a-rdb-sdk.dtb ]; then \
+@@ -104,6 +107,24 @@
+ 	 echo build LTTng modules done!
+ endif
+ 
++.PHONY: rtl8723bu
++rtl8723bu:
++ifeq ($(CONFIG_BUILD_RTL8723BU), y)
++	@$(call fetch-git-tree,rtl8723bu)
++	@$(call fetch-git-tree,$(KERNEL_TREE))
++	@if [ ! -d $(TOPDIR)/build/linux/kernel/$(DESTARCH) ]; then cd $(TOPDIR) && \
++	 flex-builder -c linux -a $(DESTARCH) -f $(CONFIGLIST) && cd -; fi && \
++	 echo -e "\nBuilding RTL8723BU module ..." && \
++	 sed -i 's/EXTRA_CFLAGS += -DCONFIG_CONCURRENT_MODE/#EXTRA_CFLAGS  += -DCONFIG_CONCURRENT_MODE/g' rtl8723bu/Makefile && \
++	 sed -i 's/#define CONFIG_IPS	1/\/\/#define CONFIG_IPS	   1/g' rtl8723bu/include/autoconf.h && \
++	 cd rtl8723bu && \
++	 curbrch=`cd $(KERNEL_PATH) && git branch -v | grep '^*' | cut -d' ' -f2` && \
++	 $(MAKE) KSRC=$(TOPDIR)/build/linux/$(KERNEL_TREE)/$(DESTARCH)/output/$$curbrch && \
++	 $(MAKE) -C $(TOPDIR)/build/linux/$(KERNEL_TREE)/$(DESTARCH)/output/$$curbrch M=$(TOPDIR)/packages/linux/rtl8723bu modules_install && \
++	 install rtl8723b_fw.bin -D $(TOPDIR)/build/linux/$(KERNEL_TREE)/$(DESTARCH)/lib/firmware/rtl_bt/rtl8723b_fw.bin && \
++	 echo build and installed RTL8723BU module+firmware done!
++endif
++
+ 
+ repo_fetch:
+ 	@echo -e "\nfetch linux repositories ..."
+diff --git a/tools/flex-builder b/tools/flex-builder
+index 5a70197..6d2b25c 100755
+--- a/tools/flex-builder
++++ b/tools/flex-builder
+@@ -805,7 +805,7 @@ merge_components() {
+     fi
+ 
+     #install PFE firmware to $RFSDIR/lib/firmware
+-    if [ $CONFIG_MACHINE_LS1012ARDB = y -o $CONFIG_MACHINE_LS1012AFRDM = y ]; then
++    if [ $CONFIG_MACHINE_LS1012ARDB = y -o $CONFIG_MACHINE_LS1012AFRDM = y -o $CONFIG_MACHINE_GRAPEBOARD = y ]; then
+ 	if [ ! -f $TOPDIR/build/firmware/qoriq-engine-pfe-bin/ls1012a/slow_path/ppfe_class_ls1012a.elf ]; then
+ 	    flex-builder -c qoriq-engine-pfe-bin
+ 	fi
+@@ -816,6 +816,27 @@ merge_components() {
+ 	tar cvzf $TOPDIR/build/images/linux-lib-firmware.tgz firmware
+ 	cd $TOPDIR
+     fi
++    
++    #install RTL8723BU firmware to $RFSDIR/lib/firmware/
++    if [ $CONFIG_MACHINE_GRAPEBOARD = y ]; then
++    	if [ ! -f $TOPDIR/build/linux/linux/arm64/lib/firmware/rtl_bt/rtl8723b_fw.bin  ]; then
++	    flex-builder -c linux -a arm64 -m grapeboard
++	fi
++        sudo mkdir -p $RFSDIR/lib/firmware/rtl_bt
++        . $TOPDIR/manifest/grapeboard.manifest
++        sudo cp -f $TOPDIR/$rtl8723bu_fw $RFSDIR/lib/firmware/rtl_bt/
++    fi
++    
++        
++    #install kernel, and dtb to $RFSDIR/boot/
++    if [ $CONFIG_MACHINE_GRAPEBOARD = y ]; then
++    	if [ ! -f $TOPDIR/build/linux/kernel/$DESTARCH/grapeboard.dtb -o ! -f $TOPDIR/build/linux/kernel/$DESTARCH/uImage ]; then
++	    flex-builder -c linux -a arm64 -m grapeboard
++	fi
++        sudo mkdir -p $RFSDIR/boot/
++        sudo cp -f $TOPDIR/build/linux/kernel/$DESTARCH/uImage $RFSDIR/boot/
++        sudo cp -f $TOPDIR/build/linux/kernel/$DESTARCH/grapeboard.dtb $RFSDIR/boot/
++    fi
+ 
+     if [ -f $TOPDIR/build/linux/kernel/$DESTARCH/perf ]; then
+         sudo cp -f $TOPDIR/build/linux/kernel/$DESTARCH/perf $RFSDIR/usr/bin
